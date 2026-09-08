@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>แผงส่งงาน</title>
+
+<!-- PWA: ทำให้ติดตั้งบนมือถือได้ -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f1218">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ส่งงาน">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ============================================================
+     ส่วนออกแบบ (DESIGN TOKENS) — แก้ค่าตรงนี้เพื่อเปลี่ยนหน้าตาทั้งเว็บ
+     ไม่ต้องแตะโค้ดด้านล่าง แค่เปลี่ยนค่าตัวแปรพวกนี้ก็พอ
+     ============================================================ */
+  :root{
+    /* สี */
+    --bg-base:#0f1218;
+    --bg-panel:#171c26;
+    --bg-panel-raised:#1e2531;
+    --border:#2a3140;
+    --border-soft:#232a37;
+    --text-primary:#eef1f6;
+    --text-secondary:#9aa4b8;
+    --text-muted:#5f6879;
+    --accent:#f5b942;       /* สีเน้น เช่น ปุ่ม, badge วันนี้ */
+    --accent-dim:#8a6b2e;
+    --danger:#e5484d;       /* สีเตือน เช่น งานเลยกำหนด */
+    --danger-dim:#7a2e30;
+    --success:#4caf7d;      /* สีงานเสร็จแล้ว */
+    --success-dim:#2f5b45;
+
+    /* ฟอนต์ */
+    --font-body:'Noto Sans Thai','IBM Plex Mono',sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+
+    /* ระยะขอบ/ความโค้ง */
+    --radius-sm:5px;
+    --radius-md:6px;
+    --radius-lg:8px;
+    --max-width:760px;
+  }
+  /* ============================================================
+     จบส่วนออกแบบ — ด้านล่างนี้เป็นโครงสร้าง ไม่จำเป็นต้องแก้
+     ============================================================ */
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg-base);
+    color:var(--text-primary);
+    font-family:var(--font-body);
+    min-height:100vh;
+    padding:0 0 4rem;
+  }
+  .mono{font-family:var(--font-mono);}
+  .wrap{
+    max-width:var(--max-width);
+    margin:0 auto;
+    padding:2.5rem 1.5rem 0;
+  }
+  .board-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:1px solid var(--border);
+    padding-bottom:1.25rem;
+    margin-bottom:1.5rem;
+  }
+  .board-head h1{
+    font-size:1.5rem;
+    font-weight:700;
+    margin:0 0 0.35rem;
+    letter-spacing:0.01em;
+  }
+  .board-head .sub{
+    color:var(--text-secondary);
+    font-size:0.9rem;
+    margin:0;
+  }
+  .clock{
+    font-family:var(--font-mono);
+    font-size:0.85rem;
+    color:var(--accent);
+    text-align:right;
+    line-height:1.5;
+  }
+  .clock .date{color:var(--text-secondary); display:block; font-size:0.78rem;}
+
+  .banner{
+    display:flex;
+    align-items:center;
+    gap:0.75rem;
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-left:3px solid var(--accent);
+    border-radius:var(--radius-md);
+    padding:0.85rem 1rem;
+    margin-bottom:1.5rem;
+    font-size:0.88rem;
+  }
+  .banner.urgent{border-left-color:var(--danger);}
+  .banner .count-box{
+    font-family:var(--font-mono);
+    font-weight:600;
+    font-size:1.1rem;
+    background:var(--bg-panel-raised);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:0.15rem 0.55rem;
+    color:var(--accent);
+  }
+  .banner.urgent .count-box{color:var(--danger);}
+  .banner button{
+    margin-left:auto;
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-secondary);
+    font-family:inherit;
+    font-size:0.8rem;
+    padding:0.4rem 0.75rem;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .banner button:hover{border-color:var(--accent); color:var(--accent);}
+
+  .add-panel{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius-lg);
+    padding:1rem;
+    margin-bottom:2rem;
+  }
+  .add-row{
+    display:flex;
+    gap:0.6rem;
+    flex-wrap:wrap;
+  }
+  .add-row input[type=text]{
+    flex:2 1 220px;
+  }
+  .add-row input[type=date],
+  .add-row input[type=time]{
+    flex:1 1 130px;
+  }
+  input[type=text], input[type=date], input[type=time]{
+    background:var(--bg-panel-raised);
+    border:1px solid var(--border);
+    color:var(--text-primary);
+    font-family:inherit;
+    font-size:0.9rem;
+    padding:0.6rem 0.7rem;
+    border-radius:var(--radius-sm);
+    outline:none;
+  }
+  input[type=date], input[type=time]{
+    font-family:var(--font-mono);
+    font-size:0.85rem;
+  }
+  input:focus{border-color:var(--accent);}
+  input::placeholder{color:var(--text-muted);}
+  .add-row button{
+    background:var(--accent);
+    color:#3a2a05;
+    border:none;
+    font-family:inherit;
+    font-weight:600;
+    font-size:0.9rem;
+    padding:0.6rem 1.1rem;
+    border-radius:var(--radius-sm);
+    cursor:pointer;
+  }
+  .add-row button:hover{filter:brightness(1.1);}
+  .form-err{color:var(--danger); font-size:0.8rem; margin:0.5rem 0 0;}
+
+  .section{margin-bottom:1.75rem;}
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    gap:0.6rem;
+    margin-bottom:0.6rem;
+  }
+  .section-head .label{
+    font-size:0.95rem;
+    font-weight:600;
+  }
+  .section-head .n{
+    font-family:var(--font-mono);
+    font-size:0.8rem;
+    color:var(--text-muted);
+  }
+  .section.overdue .label{color:var(--danger);}
+  .section.today .label{color:var(--accent);}
+
+  .task-row{
+    display:flex;
+    align-items:center;
+    gap:0.85rem;
+    background:var(--bg-panel);
+    border:1px solid var(--border-soft);
+    border-radius:var(--radius-md);
+    padding:0.7rem 0.9rem;
+    margin-bottom:0.5rem;
+  }
+  .section.overdue .task-row{border-left:3px solid var(--danger);}
+  .section.today .task-row{border-left:3px solid var(--accent);}
+  .task-row.done{opacity:0.55;}
+
+  .chk{
+    width:20px;
+    height:20px;
+    flex:none;
+    border:1px solid var(--border);
+    border-radius:4px;
+    background:var(--bg-panel-raised);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--success);
+    font-size:0.8rem;
+  }
+  .task-row.done .chk{background:var(--success-dim); border-color:var(--success);}
+
+  .task-title{
+    flex:1 1 auto;
+    font-size:0.92rem;
+    min-width:0;
+    overflow-wrap:break-word;
+  }
+  .task-row.done .task-title{text-decoration:line-through; color:var(--text-secondary);}
+
+  .badge{
+    font-family:var(--font-mono);
+    font-size:0.75rem;
+    padding:0.25rem 0.55rem;
+    border-radius:4px;
+    white-space:nowrap;
+    background:var(--bg-panel-raised);
+    color:var(--text-secondary);
+    border:1px solid var(--border);
+  }
+  .section.overdue .badge{color:var(--danger); border-color:var(--danger-dim);}
+  .section.today .badge{color:var(--accent); border-color:var(--accent-dim);}
+
+  .del-btn{
+    background:transparent;
+    border:none;
+    color:var(--text-muted);
+    font-size:1.1rem;
+    cursor:pointer;
+    padding:0.1rem 0.3rem;
+    line-height:1;
+  }
+  .del-btn:hover{color:var(--danger);}
+
+  .empty{
+    color:var(--text-muted);
+    font-size:0.85rem;
+    padding:0.5rem 0.2rem;
+  }
+
+  @media (max-width:520px){
+    .board-head{flex-direction:column; align-items:flex-start; gap:0.6rem;}
+    .clock{text-align:left;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="board-head">
+    <div>
+      <h1>แผงส่งงาน</h1>
+      <p class="sub">เพิ่มงาน ตั้งวันครบกำหนด แล้วให้บอร์ดคอยเตือน</p>
+    </div>
+    <div class="clock mono">
+      <span id="clock-time">--:--</span>
+      <span class="date" id="clock-date">-</span>
+    </div>
+  </div>
+
+  <div id="banner-slot"></div>
+
+  <div class="add-panel">
+    <div class="add-row">
+      <input type="text" id="input-title" placeholder="ชื่องาน เช่น ส่งรายงานการเงิน Q3">
+      <input type="date" id="input-date">
+      <input type="time" id="input-time">
+      <button id="btn-add">เพิ่มงาน</button>
+    </div>
+    <p class="form-err" id="form-err" style="display:none;"></p>
+  </div>
+
+  <div id="sections"></div>
+
+</div>
+
+<script>
+(function(){
+  var tasks = [];
+  var notifyEnabled = false;
+
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  }
+
+  function parseDate(dstr){
+    var p = dstr.split('-');
+    return new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+  }
+
+  function dayDiff(dstr){
+    var a = parseDate(dstr);
+    var b = parseDate(todayStr());
+    return Math.round((a - b) / 86400000);
+  }
+
+  function formatDateShort(dstr){
+    var d = parseDate(dstr);
+    var months = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    return d.getDate() + ' ' + months[d.getMonth()];
+  }
+
+  function urgencyLabel(t){
+    var diff = dayDiff(t.dueDate);
+    var timeSuffix = t.dueTime ? ' · ' + t.dueTime + ' น.' : '';
+    if(diff < 0){
+      var od = Math.abs(diff);
+      return 'เลยกำหนด ' + od + ' วัน · ' + formatDateShort(t.dueDate) + timeSuffix;
+    }
+    if(diff === 0) return 'วันนี้' + timeSuffix + ' · ' + formatDateShort(t.dueDate);
+    if(diff === 1) return 'พรุ่งนี้' + timeSuffix + ' · ' + formatDateShort(t.dueDate);
+    return 'อีก ' + diff + ' วัน · ' + formatDateShort(t.dueDate);
+  }
+
+  function bucketOf(t){
+    if(t.done) return 'done';
+    var diff = dayDiff(t.dueDate);
+    if(diff < 0) return 'overdue';
+    if(diff === 0) return 'today';
+    if(diff <= 3) return 'soon';
+    return 'later';
+  }
+
+  function sortKey(t){
+    return t.dueDate + ' ' + (t.dueTime || '00:00');
+  }
+
+  async function loadTasks(){
+    try{
+      var res = await window.storage.get('tasks-v1', false);
+      tasks = res && res.value ? JSON.parse(res.value) : [];
+    }catch(e){
+      tasks = [];
+    }
+  }
+
+  async function saveTasks(){
+    try{
+      await window.storage.set('tasks-v1', JSON.stringify(tasks), false);
+    }catch(e){
+      console.error('บันทึกไม่สำเร็จ', e);
+    }
+  }
+
+  function escapeHtml(s){
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function render(){
+    renderBanner();
+    renderSections();
+    renderClock();
+  }
+
+  function renderClock(){
+    var now = new Date();
+    var days = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+    document.getElementById('clock-time').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    document.getElementById('clock-date').textContent = 'วัน' + days[now.getDay()] + ' ' + formatDateShort(todayStr());
+  }
+
+  function renderBanner(){
+    var slot = document.getElementById('banner-slot');
+    var overdue = tasks.filter(function(t){ return !t.done && bucketOf(t) === 'overdue'; }).length;
+    var today = tasks.filter(function(t){ return !t.done && bucketOf(t) === 'today'; }).length;
+
+    var html = '';
+    if(overdue > 0 || today > 0){
+      var urgent = overdue > 0;
+      var msg = '';
+      if(overdue > 0) msg += 'เลยกำหนด <span class="count-box">' + overdue + '</span> งาน ';
+      if(today > 0) msg += 'ต้องส่งวันนี้ <span class="count-box">' + today + '</span> งาน';
+      html = '<div class="banner' + (urgent ? ' urgent' : '') + '">' +
+        '<span>' + msg + '</span>' +
+        (!notifyEnabled ? '<button id="btn-notify">เปิดการแจ้งเตือน</button>' : '') +
+        '</div>';
+    } else if(!notifyEnabled){
+      html = '<div class="banner"><span>ยังไม่มีงานเร่งด่วนตอนนี้</span><button id="btn-notify">เปิดการแจ้งเตือน</button></div>';
+    }
+    slot.innerHTML = html;
+    var btn = document.getElementById('btn-notify');
+    if(btn) btn.addEventListener('click', requestNotify);
+  }
+
+  function requestNotify(){
+    if(!('Notification' in window)){
+      notifyEnabled = false;
+      return;
+    }
+    Notification.requestPermission().then(function(perm){
+      notifyEnabled = (perm === 'granted');
+      if(notifyEnabled) checkAndNotify(true);
+      render();
+    });
+  }
+
+  function checkAndNotify(force){
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    var due = tasks.filter(function(t){ return !t.done && (bucketOf(t) === 'overdue' || bucketOf(t) === 'today'); });
+    if(due.length === 0) return;
+    if(!force) return;
+    var body = due.slice(0,5).map(function(t){ return '• ' + t.title; }).join('\n');
+    try{
+      new Notification('มีงานต้องส่ง (' + due.length + ' รายการ)', { body: body });
+    }catch(e){}
+  }
+
+  function sectionBlock(key, label, cls, list){
+    var rows = '';
+    if(list.length === 0){
+      rows = '<p class="empty">ไม่มีงานในกลุ่มนี้</p>';
+    } else {
+      list.sort(function(a,b){ return sortKey(a) < sortKey(b) ? -1 : 1; });
+      rows = list.map(rowHtml).join('');
+    }
+    return '<div class="section ' + cls + '">' +
+      '<div class="section-head"><span class="label">' + label + '</span><span class="n">' + list.length + '</span></div>' +
+      rows +
+      '</div>';
+  }
+
+  function rowHtml(t){
+    return '<div class="task-row' + (t.done ? ' done' : '') + '" data-id="' + t.id + '">' +
+      '<div class="chk" data-action="toggle" data-id="' + t.id + '">' + (t.done ? '&#10003;' : '') + '</div>' +
+      '<div class="task-title">' + escapeHtml(t.title) + '</div>' +
+      '<div class="badge">' + urgencyLabel(t) + '</div>' +
+      '<button class="del-btn" data-action="delete" data-id="' + t.id + '" aria-label="ลบงาน">&times;</button>' +
+      '</div>';
+  }
+
+  function renderSections(){
+    var overdue = tasks.filter(function(t){ return bucketOf(t) === 'overdue'; });
+    var today = tasks.filter(function(t){ return bucketOf(t) === 'today'; });
+    var soon = tasks.filter(function(t){ return bucketOf(t) === 'soon'; });
+    var later = tasks.filter(function(t){ return bucketOf(t) === 'later'; });
+    var done = tasks.filter(function(t){ return t.done; }).sort(function(a,b){ return sortKey(b) < sortKey(a) ? -1 : 1; });
+
+    var html = '';
+    html += sectionBlock('overdue', 'เลยกำหนดส่ง', 'overdue', overdue);
+    html += sectionBlock('today', 'ต้องส่งวันนี้', 'today', today);
+    html += sectionBlock('soon', 'ใกล้ถึงกำหนด (ภายใน 3 วัน)', 'soon', soon);
+    html += sectionBlock('later', 'ยังมีเวลา', 'later', later);
+    html += sectionBlock('done', 'ทำเสร็จแล้ว', 'done', done);
+
+    var container = document.getElementById('sections');
+    container.innerHTML = html;
+
+    container.querySelectorAll('[data-action="toggle"]').forEach(function(el){
+      el.addEventListener('click', function(){ toggleTask(el.getAttribute('data-id')); });
+    });
+    container.querySelectorAll('[data-action="delete"]').forEach(function(el){
+      el.addEventListener('click', function(){ deleteTask(el.getAttribute('data-id')); });
+    });
+  }
+
+  async function toggleTask(id){
+    var t = tasks.find(function(x){ return x.id === id; });
+    if(!t) return;
+    t.done = !t.done;
+    render();
+    await saveTasks();
+  }
+
+  async function deleteTask(id){
+    tasks = tasks.filter(function(x){ return x.id !== id; });
+    render();
+    await saveTasks();
+  }
+
+  async function addTask(){
+    var titleEl = document.getElementById('input-title');
+    var dateEl = document.getElementById('input-date');
+    var timeEl = document.getElementById('input-time');
+    var errEl = document.getElementById('form-err');
+
+    var title = titleEl.value.trim();
+    var dueDate = dateEl.value;
+    var dueTime = timeEl.value;
+
+    if(!title){
+      errEl.textContent = 'กรอกชื่องานก่อน';
+      errEl.style.display = 'block';
+      titleEl.focus();
+      return;
+    }
+    if(!dueDate){
+      errEl.textContent = 'เลือกวันครบกำหนดก่อน';
+      errEl.style.display = 'block';
+      dateEl.focus();
+      return;
+    }
+    errEl.style.display = 'none';
+
+    tasks.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      title: title,
+      dueDate: dueDate,
+      dueTime: dueTime || '',
+      done: false,
+      createdAt: Date.now()
+    });
+
+    titleEl.value = '';
+    dateEl.value = '';
+    timeEl.value = '';
+    titleEl.focus();
+
+    render();
+    await saveTasks();
+  }
+
+  document.getElementById('btn-add').addEventListener('click', addTask);
+  document.getElementById('input-title').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') addTask();
+  });
+
+  setInterval(renderClock, 30000);
+
+  // ลงทะเบียน service worker เพื่อให้ติดตั้งเป็นแอปบนมือถือได้
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(e){
+        console.warn('ลงทะเบียน service worker ไม่สำเร็จ', e);
+      });
+    });
+  }
+
+  (async function init(){
+    await loadTasks();
+    if('Notification' in window && Notification.permission === 'granted'){
+      notifyEnabled = true;
+    }
+    render();
+    if(notifyEnabled) checkAndNotify(true);
+  })();
+})();
+</script>
+</body>
+</html>
