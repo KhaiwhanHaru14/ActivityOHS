@@ -364,8 +364,8 @@
 
   async function loadTasks(){
     try{
-      var res = await window.storage.get('tasks-v1', false);
-      tasks = res && res.value ? JSON.parse(res.value) : [];
+      var raw = localStorage.getItem('tasks-v1');
+      tasks = raw ? JSON.parse(raw) : [];
     }catch(e){
       tasks = [];
     }
@@ -373,7 +373,7 @@
 
   async function saveTasks(){
     try{
-      await window.storage.set('tasks-v1', JSON.stringify(tasks), false);
+      localStorage.setItem('tasks-v1', JSON.stringify(tasks));
     }catch(e){
       console.error('บันทึกไม่สำเร็จ', e);
     }

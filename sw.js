@@ -1,4 +1,4 @@
-const CACHE_NAME = 'task-board-v1';
+const CACHE_NAME = 'task-board-v2';
 const ASSETS = [
   './',
   './index.html',
